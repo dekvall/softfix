@@ -1,0 +1,15 @@
+on: 
+  issue_comment:
+    types: [created]
+name: Automatic Rebase
+jobs:
+  rebase:
+    name: Rebase
+    if: github.event.issue.pull_request != '' && contains(github.event.comment.body, '/softfix')
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Softfix
+      uses: ./action.yml
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

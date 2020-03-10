@@ -1,0 +1,11 @@
+name: "Softfix"
+description: "Fix up a pr from a beginner while reviewing"
+author: "dkvldev@gmail.com"
+
+runs:
+  using: "docker"
+  image: "Dockerfile"
+
+branding:
+  icon: "git-commit"
+  color: "green"
