@@ -1,0 +1,11 @@
+name: "Softfix"
+description: "Helps squashing commits in prs"
+author: "dkvldev@gmail.com"
+
+runs:
+  using: "docker"
+  image: "Dockerfile"
+
+branding:
+  icon: "book"
+  color: "green"
