@@ -8,9 +8,14 @@ COMMENT_BODY=$(jq ".comment.body" "$GITHUB_EVENT_PATH")
 echo $COMMENT_BODY
 
 ESCAPED_COMMIT_MSG=$(echo $COMMENT_BODY | sed -e 's=.*/softfix\\r\\n```\(.*\)\\r\\n```.*=\1=')
-COMMIT_MESSAGE=$(echo -e $ESCAPED_COMMIT_MESSAGE)
+COMMIT_MSG=$(echo -e $ESCAPED_COMMIT_MSG)
 
-echo $COMMIT_MESSAGE
+if [[ "$ESCAPED_COMMIT_MSG" == "$COMMENT_BODY" ]]; then
+	# Do not edit the commit message
+	COMMIT_MSG=""
+fi
+
+echo $COMMIT_MSG
 # Grab the old commit message and use it if there is nothing else
 # But really only handling of the message is required now, and a lot of cleanup
 echo "Softfixing #$PR_NUMBER in $GITHUB_REPOSITORY"
@@ -31,6 +36,11 @@ COMMITS_URL=$(echo "$pr_response" | jq -r .commits_url)
 commits_response=$(curl -s -H "${AUTH_HEADER}" -H "${API_HEADER}" $COMMITS_URL)
 # This is limited to 250 entries, but it should be okay
 N_COMMITS=$(echo $commits_response | jq -r length)
+
+if [[ -z "$COMMIT_MSG" ]] && [[ "$N_COMMITS" -eq 1 ]]; then
+	echo "Nothing to do here, aborting..."
+	exit 0
+fi
 
 USER_LOGIN=$(jq -r ".comment.user.login" "$GITHUB_EVENT_PATH")
 user_response=$(curl -s -H "${AUTH_HEADER}" -H "${API_HEADER}" \
@@ -63,8 +73,13 @@ git remote add fork https://x-access-token:$COMMITTER_TOKEN@github.com/$HEAD_REP
 git fetch fork $HEAD_BRANCH
 
 git checkout -b $HEAD_BRANCH fork/$HEAD_BRANCH
-git reset --soft HEAD~$N_COMMITS
-git commit -m "$COMMIT_MSG"
+git reset --soft HEAD~$(($N_COMMITS-1))
+
+if [[ -z "$COMMIT_MSG" ]]; then
+	git commit --amend --no-edit
+else
+	git commit --amend -m "$COMMIT_MSG"
+fi
 
 git push --force-with-lease fork $HEAD_BRANCH
 
