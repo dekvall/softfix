@@ -1,7 +1,5 @@
 #!/bin/bash
 
-echo "hi"
-
 set -e
 
 PR_NUMBER=$(jq -r ".issue.number" "$GITHUB_EVENT_PATH")
@@ -9,6 +7,10 @@ COMMENT_BODY=$(jq -r ".comment.body" "$GITHUB_EVENT_PATH")
 
 echo $COMMENT_BODY
 
+COMMIT_MSG=$(echo $COMMENT_BODY | sed -e 's/.*\/softfix\r\n```\(.*\)```.*/\1/')
+
+# Grab the old commit message and use it if there is nothing else
+# But really only handling of the message is required now, and a lot of cleanup
 echo "Softfixing #$PR_NUMBER in $GITHUB_REPOSITORY"
 
 if [[ -z "$GITHUB_TOKEN" ]]; then
@@ -24,12 +26,11 @@ pr_response=$(curl -s -H "${AUTH_HEADER}" -H "${API_HEADER}" \
 "${URI}/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER")
 
 COMMITS_URL=$(echo "$pr_response" | jq -r .commits_url)
-BASE_SHA=$(echo "$pr_response" | jq -r .base.sha)
-
-N_COMMITS=$(curl -s -H "${AUTH_HEADER}" -H "${API_HEADER}" $COMMITS_URL | jq length)
+commits_response=$(curl -s -H "${AUTH_HEADER}" -H "${API_HEADER}" $COMMITS_URL)
+# This is limited to 250 entries, but it should be okay
+N_COMMITS=$(echo $commits_response | jq -r length)
 
 USER_LOGIN=$(jq -r ".comment.user.login" "$GITHUB_EVENT_PATH")
-
 user_response=$(curl -s -H "${AUTH_HEADER}" -H "${API_HEADER}" \
 "${URI}/users/${USER_LOGIN}")
 
@@ -45,17 +46,8 @@ if [[ "$USER_EMAIL" == "null" ]]; then
 	USER_EMAIL="$USER_LOGIN@users.noreply.github.com"
 fi
 
-if [[ -z "$BASE_SHA" ]]; then
-	echo "Cannot get base sha information for #$PR_NUMBER"
-	echo "API response: $pr_resp"
-	exit 1
-fi
-
 HEAD_REPO=$(echo "$pr_response" | jq -r .head.repo.full_name)
 HEAD_BRANCH=$(echo "$pr_response" | jq -r .head.ref)
-
-#FIRST_PR_COMMIT=$(git rev-list $BASE_SHA..| head -1)
-LENGTH=$()
 
 USER_TOKEN=${USER_LOGIN}_TOKEN
 COMMITTER_TOKEN=${!USER_TOKEN:-$GITHUB_TOKEN}
@@ -66,20 +58,12 @@ git config --global user.name "$USER_NAME"
 
 git remote add fork https://x-access-token:$COMMITTER_TOKEN@github.com/$HEAD_REPO.git
 
-set -o xtrace
-
 git fetch fork $HEAD_BRANCH
 
-echo $BASE_SHA
-echo "Resetting on $FIRST_PR_COMMIT"
-
-git rev-list fork/$HEAD_BRANCH
-# do the reset
 git checkout -b $HEAD_BRANCH fork/$HEAD_BRANCH
 git reset --soft HEAD~$N_COMMITS
-git commit -m "$COMMENT_BODY"
+git commit -m "$COMMIT_MSG"
 
-# push back
 git push --force-with-lease fork $HEAD_BRANCH
 
 
