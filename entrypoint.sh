@@ -3,12 +3,14 @@
 set -e
 
 PR_NUMBER=$(jq -r ".issue.number" "$GITHUB_EVENT_PATH")
-COMMENT_BODY=$(jq -r ".comment.body" "$GITHUB_EVENT_PATH")
+COMMENT_BODY=$(jq ".comment.body" "$GITHUB_EVENT_PATH")
 
 echo $COMMENT_BODY
 
-COMMIT_MSG=$(echo $COMMENT_BODY | sed -e 's/.*\/softfix\r\n```\(.*\)```.*/\1/')
+ESCAPED_COMMIT_MSG=$(echo $COMMENT_BODY | sed -e 's=.*/softfix\\r\\n```\(.*\)\\r\\n```.*=\1=')
+COMMIT_MESSAGE=$(echo -e $ESCAPED_COMMIT_MESSAGE)
 
+echo $COMMIT_MESSAGE
 # Grab the old commit message and use it if there is nothing else
 # But really only handling of the message is required now, and a lot of cleanup
 echo "Softfixing #$PR_NUMBER in $GITHUB_REPOSITORY"
