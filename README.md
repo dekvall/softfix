@@ -16,7 +16,9 @@ Some other text not related to the commit message in particular.
 
 ## Motivation
 A PR should be atomic in itself, and can usually be a single commit. New contributors, usually after a long and  arduous review process can be asked to "squash" their commits.
-This can be confusing so this action makes it easy make the entire changeset into one commit and if one wants to do so, change the commit message.
+This can be confusing, especially for new contributors, so this action makes it easy make the entire changeset into one commit and if one wants to do so, change the commit message.
+
+![softfix_demo](img/softfix_demo.png)
 
 ## Installation
 Add the following lines to a file named `.github/workflows/softfix.yml` to use.
