@@ -14,6 +14,12 @@ The details of the new commit message
 Some other text not related to the commit message in particular.
 ````
 
+There is also an option to concatenate all messages like GitHub's "Squash and merge" feature.
+
+```
+/softfix:squash
+```
+
 ## Motivation
 A PR should be atomic in itself, and can usually be a single commit. When you submit a change to an upstream repo, after a long and arduous review process, you will probably be asked to "squash" your commits. This can be confusing, especially for new contributors, so this action makes it easy to turn the entire changeset into one commit and if one wants to do so, change the commit message.
 
